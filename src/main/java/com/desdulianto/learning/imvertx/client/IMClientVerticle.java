@@ -1,7 +1,7 @@
 package com.desdulianto.learning.imvertx.client;
 
-import com.desdulianto.learning.imvertx.server.Message;
-import com.desdulianto.learning.imvertx.server.TextMessage;
+import com.desdulianto.learning.imvertx.packet.Message;
+import com.desdulianto.learning.imvertx.packet.TextMessage;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.Verticle;

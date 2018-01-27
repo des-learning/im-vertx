@@ -1,6 +1,6 @@
 package com.desdulianto.learning.imvertx.client;
 
-import com.desdulianto.learning.imvertx.server.TextMessage;
+import com.desdulianto.learning.imvertx.packet.TextMessage;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;

@@ -1,4 +1,4 @@
-package com.desdulianto.learning.imvertx.server;
+package com.desdulianto.learning.imvertx.packet;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
