@@ -8,6 +8,7 @@ import io.vertx.core.net.NetSocket;
 
 import java.util.Scanner;
 
+// verticle interactive untuk menerima input dari user
 public class IMInteractiveVerticle extends AbstractVerticle {
     private EventBus eventBus;
     private final NetSocket socket;
@@ -29,6 +30,7 @@ public class IMInteractiveVerticle extends AbstractVerticle {
             socket.write(JsonObject.mapFrom(new TextMessage(message)).toBuffer());
         }
 
+        // announce bahwa proses udah selesai, matikan verticle
         eventBus.publish("system", "stop");
         getVertx().close();
     }
