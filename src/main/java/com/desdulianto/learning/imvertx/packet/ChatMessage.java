@@ -8,7 +8,7 @@ import java.util.UUID;
 
 // class untuk menampung format json
 @JsonTypeInfo(use= JsonTypeInfo.Id.CLASS, include= JsonTypeInfo.As.PROPERTY, property="@class")
-public class Message {
+public class ChatMessage {
     private final UUID id;
 
     public UUID getId() {
@@ -16,12 +16,19 @@ public class Message {
     }
 
     @JsonCreator
-    public Message() {
+    public ChatMessage() {
         this.id = UUID.randomUUID();
     }
 
     @JsonCreator
-    public Message(@JsonProperty("id") final UUID id) {
+    public ChatMessage(@JsonProperty("id") final UUID id) {
         this.id = id;
+    }
+
+    @Override
+    public String toString() {
+        return "Message{" +
+                "id=" + id +
+                '}';
     }
 }

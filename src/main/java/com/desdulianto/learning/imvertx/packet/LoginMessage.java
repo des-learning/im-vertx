@@ -3,7 +3,7 @@ package com.desdulianto.learning.imvertx.packet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class LoginMessage extends Message {
+public class LoginMessage extends ChatMessage {
     private final String username;
     private final String password;
 
@@ -20,5 +20,13 @@ public class LoginMessage extends Message {
 
     public String getPassword() {
         return password;
+    }
+
+    @Override
+    public String toString() {
+        return "LoginMessage{" +
+                "username='" + username + '\'' +
+                ", password='" + password + '\'' +
+                '}';
     }
 }

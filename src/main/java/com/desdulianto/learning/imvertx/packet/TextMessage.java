@@ -3,7 +3,7 @@ package com.desdulianto.learning.imvertx.packet;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class TextMessage extends Message {
+public class TextMessage extends ChatMessage {
     private String message;
 
     @JsonCreator
@@ -18,5 +18,12 @@ public class TextMessage extends Message {
 
     public String getMessage() {
         return message;
+    }
+
+    @Override
+    public String toString() {
+        return "TextMessage{" +
+                "message='" + message + '\'' +
+                '}';
     }
 }
