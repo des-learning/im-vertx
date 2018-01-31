@@ -1,66 +1,73 @@
 package com.desdulianto.learning.imvertx.client;
 
-import com.desdulianto.learning.imvertx.packet.Message;
-import com.desdulianto.learning.imvertx.packet.TextMessage;
 import io.vertx.core.AbstractVerticle;
-import io.vertx.core.DeploymentOptions;
-import io.vertx.core.Verticle;
-import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
+
+import java.util.function.Consumer;
 
 
 // verticle client
 public class IMClientVerticle extends AbstractVerticle {
     private NetClient client;
-    private EventBus eventBus;
     private NetSocket socket;
 
-    // start client
     @Override
-    public void start() {
-        // connect ke server
+    public void start() throws Exception {
+         // connect ke server
         client = getVertx().createNetClient();
+
         client.connect(1286, "localhost", res -> {
             if (res.succeeded()) {
                 socket = res.result();
-                handleMessage(socket);
-                eventBus = getVertx().eventBus();
-                subcribe();
-                // info bahwa sudah bisa start interaksi
-                eventBus.publish("system", "start");
+
+                // incoming message handler
+                // receive message from network, then send it to the eventbus
+                receiveMessage();
+
+                // outgoing message handler
+                // read from eventbus then send it through network
+                sendMessage();
             } else {
-                System.out.println("Unable to connect");
                 getVertx().close();
             }
         });
     }
 
-    // mengirimkan pesan ke server
-    private void handleMessage(NetSocket socket) {
+    /**
+     * receive message from network and publish it through the eventbus
+     */
+    private void receiveMessage() {
         socket.handler(buffer -> {
-            Message message = buffer.toJsonObject().mapTo(Message.class);
-            if (message instanceof TextMessage) {
-                TextMessage tm = (TextMessage) message;
-                System.out.println("From Server: " + tm.getMessage());
-            }
+            getVertx().eventBus().publish("incoming", buffer.toJsonObject());
         });
     }
 
-    private void subcribe() {
-        eventBus.consumer("system").handler(objectMessage -> {
-            // jalankan verticle interactive untuk interaksi user
-            if (objectMessage.body().toString().equals("start")) {
-                System.out.println("Connected");
-                Verticle interactive = new IMInteractiveVerticle(socket);
-                // verticle interactive akan blocking karena membaca input dari keyboard
-                // oleh karena itu verticle ini dijalankan pada thread terpisah `setWorker(true)`
-                getVertx().deployVerticle(interactive, new DeploymentOptions().setWorker(true));
-                // matikan verticle apabila sudah selesai
-            } else if (objectMessage.body().equals("stop")) {
-                System.out.println("Bye-bye");
-                getVertx().close();
-            }
+    /**
+     * receive message from eventbus and send it trought the network
+     */
+    private void sendMessage() {
+        getVertx().eventBus().consumer("outgoing").handler(objectMessage -> {
+            socket.write(JsonObject.mapFrom(objectMessage.body()).toBuffer());
         });
+    }
+
+    /**
+     * handle incoming message received from the network
+     * @param consumer consumer code
+     */
+    public void incomingMessageHandler(Consumer<JsonObject> consumer) {
+        getVertx().eventBus().consumer("incoming").handler(objectMessage -> {
+            consumer.accept(JsonObject.mapFrom(objectMessage.body()));
+        });
+    }
+
+    /**
+     * handle outgoing message to the network
+     * @param message
+     */
+    public void outgoingMessageHandler(JsonObject message) {
+        getVertx().eventBus().publish("outgoing", message);
     }
 }

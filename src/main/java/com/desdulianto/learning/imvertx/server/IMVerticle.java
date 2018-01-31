@@ -1,10 +1,9 @@
 package com.desdulianto.learning.imvertx.server;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.eventbus.MessageProducer;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetServer;
 import io.vertx.core.net.NetSocket;
@@ -17,24 +16,19 @@ public class IMVerticle extends AbstractVerticle {
         // vertx sebenarnya hanya listen 1 kali pada jaringan dan kemudian masing-masing instance verticle
         // yang listen ke ip dan port yang sama hanya mendapatkan reference ke instance server
         NetServer imServer = getVertx().createNetServer();
-        // event bus untuk berkomunikasi antar instance verticle
-        EventBus eventBus = getVertx().eventBus();
 
-        //subscribe to broadcast eventbus
-        MessageConsumer<Object> consumer = eventBus.consumer("broadcast");
-        MessageProducer<Object> publisher = eventBus.publisher("broadcast");
-
-        // handler untuk menghandle event data jaringan
         imServer.connectHandler(socket -> {
-            processMessage(consumer, socket);
+            // process broadcast message
+            processMessage(getVertx().eventBus().consumer("broadcast"), socket);
 
-            socket.handler(buffer ->
-                receiveMessage(buffer, publisher)
-            );
+            // receive message
+            socket.handler(buffer -> {
+                receiveMessage(getVertx(), buffer);
+            });
 
-            socket.closeHandler(buffer ->
-                System.out.println("bye")
-            );
+            socket.closeHandler(aVoid -> {
+                System.out.println(String.format("disconnected from %s", socket.remoteAddress()));
+            });
         });
 
         // listen ke jaringan
@@ -48,24 +42,13 @@ public class IMVerticle extends AbstractVerticle {
         });
     }
 
-    /**
-     * receive message handler, send received message to eventbus
-     *
-     * @param buffer received message from network
-     * @param producer eventbus producer to publish ke message to eventbus
-     */
-    private void receiveMessage(Buffer buffer, MessageProducer<Object> producer) {
-        producer.write(buffer);
+    private void processMessage(MessageConsumer<Object> consumer, NetSocket socket) {
+        consumer.handler(message -> {
+            socket.write(new JsonObject(message.body().toString()).toBuffer());
+        });
     }
 
-    /**
-     * process message in the eventbus by sending it to client through netsocket
-     * @param consumer eventbus message consumer, to get and handle the message
-     * @param socket netsocket to send the message to client
-     */
-    private void processMessage(MessageConsumer<Object> consumer, NetSocket socket) {
-        consumer.handler(message ->
-            socket.write(new JsonObject(message.body().toString()).toBuffer())
-        );
+    private void receiveMessage(Vertx vertx, Buffer buffer) {
+        vertx.eventBus().publish("broadcast", buffer);
     }
 }
