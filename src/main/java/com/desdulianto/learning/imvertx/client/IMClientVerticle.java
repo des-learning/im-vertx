@@ -1,6 +1,7 @@
 package com.desdulianto.learning.imvertx.client;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetClient;
 import io.vertx.core.net.NetSocket;
@@ -30,6 +31,7 @@ public class IMClientVerticle extends AbstractVerticle {
                 // read from eventbus then send it through network
                 sendMessage();
             } else {
+                System.out.println("Unable to connect");
                 getVertx().close();
             }
         });
@@ -65,9 +67,13 @@ public class IMClientVerticle extends AbstractVerticle {
 
     /**
      * handle outgoing message to the network
-     * @param message
+     * @param message json message to send
      */
     public void outgoingMessageHandler(JsonObject message) {
         getVertx().eventBus().publish("outgoing", message);
+    }
+
+    public void shutdown() {
+        getVertx().close();
     }
 }
