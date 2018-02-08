@@ -81,7 +81,7 @@ public class IMGui extends Application implements Initializable {
         login.initModality(Modality.APPLICATION_MODAL);
         Pair<String, String> loginData = login.showAndWait().orElse(new Pair<>("", ""));
 
-        this.vertx = Vertx.vertx();
+        IMGui.vertx = Vertx.vertx();
         verticle = new IMClientVerticle();
         vertx.deployVerticle(verticle, stringAsyncResult -> {
             if (stringAsyncResult.succeeded()) {
@@ -120,12 +120,10 @@ public class IMGui extends Application implements Initializable {
 
     private void handleSendMessage(ActionEvent event) {
         User user = new User(lstUsers.getSelectionModel().getSelectedItem());
-        if (user != null) {
-            ChatMessage message = new ConversationMessage(txtChat.getText(), this.user.getUsername(), user.getUsername());
-            areaChat.appendText(txtChat.getText() + "\n");
-            verticle.outgoingMessageHandler(JsonObject.mapFrom(message));
-            txtChat.clear();
-            txtChat.requestFocus();
-        }
+        ChatMessage message = new ConversationMessage(txtChat.getText(), this.user.getUsername(), user.getUsername());
+        areaChat.appendText(txtChat.getText() + "\n");
+        verticle.outgoingMessageHandler(JsonObject.mapFrom(message));
+        txtChat.clear();
+        txtChat.requestFocus();
     }
 }
