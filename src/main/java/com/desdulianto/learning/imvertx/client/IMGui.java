@@ -31,6 +31,7 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.ResourceBundle;
 import java.util.logging.Logger;
+import java.util.stream.Collectors;
 
 public class IMGui extends Application implements Initializable {
     @FXML
@@ -40,7 +41,7 @@ public class IMGui extends Application implements Initializable {
     @FXML
     private Button btnSend;
     @FXML
-    private ListView<User> lstUsers;
+    private ListView<String> lstUsers;
 
     private IMClientVerticle verticle;
 
@@ -111,13 +112,14 @@ public class IMGui extends Application implements Initializable {
         } else if (m instanceof OnlineUsers) {
             Platform.runLater(() -> {
                 lstUsers.getItems().clear();
-                lstUsers.getItems().addAll(((OnlineUsers) m).getUsers());
+                lstUsers.getItems().addAll(((OnlineUsers) m).getUsers().stream().map(User::getUsername)
+                        .collect(Collectors.toSet()));
             });
         }
     }
 
     private void handleSendMessage(ActionEvent event) {
-        User user = lstUsers.getSelectionModel().getSelectedItem();
+        User user = new User(lstUsers.getSelectionModel().getSelectedItem());
         if (user != null) {
             ChatMessage message = new ConversationMessage(txtChat.getText(), this.user.getUsername(), user.getUsername());
             areaChat.appendText(txtChat.getText() + "\n");
