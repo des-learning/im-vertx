@@ -11,8 +11,6 @@ import com.desdulianto.learning.imvertx.packet.OnlineUsers;
 import com.desdulianto.learning.imvertx.packet.TextMessage;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.eventbus.MessageConsumer;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.shareddata.LocalMap;
