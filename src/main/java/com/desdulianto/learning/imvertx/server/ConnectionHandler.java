@@ -8,27 +8,27 @@ import com.desdulianto.learning.imvertx.packet.LoginMessage;
 import com.desdulianto.learning.imvertx.packet.LoginNotification;
 import com.desdulianto.learning.imvertx.packet.LogoutNotification;
 import com.desdulianto.learning.imvertx.packet.OnlineUsers;
+import com.desdulianto.learning.imvertx.packet.TextMessage;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
-import io.vertx.core.eventbus.Message;
 import io.vertx.core.eventbus.MessageConsumer;
+import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.net.NetSocket;
 import io.vertx.core.shareddata.LocalMap;
 
 import java.util.Collection;
+import java.util.Optional;
 
 public class ConnectionHandler {
     private final Vertx vertx;
     private final NetSocket socket;
     private User user;
-    private MessageConsumer<Object> broadcastConsumer;
 
     public ConnectionHandler(Vertx vertx, NetSocket socket) {
         this.vertx = vertx;
         this.socket = socket;
         this.user = null;
-        this.broadcastConsumer = vertx.eventBus().consumer("broadcast");
 
         // read message from network
         this.socket.handler(this::receiveMessage);
@@ -41,36 +41,50 @@ public class ConnectionHandler {
         return user != null;
     }
 
+    private Optional<ChatMessage> getMessage(Buffer buffer) {
+        try {
+            return Optional.of(buffer.toJsonObject().mapTo(ChatMessage.class));
+        } catch (Exception e){
+            return Optional.empty();
+        }
+    }
+
     /**
      * process message from the network
      * @param buffer incoming mesage from the network
      */
     private void receiveMessage(Buffer buffer) {
-        ChatMessage message;
+        ChatMessage message = getMessage(buffer).orElse(new ChatMessage());
 
-        try {
-            message = buffer.toJsonObject().mapTo(ChatMessage.class);
-        } catch (Exception e) {
-            System.err.println("Error decoding message " + buffer.toString());
-            return;
-        }
-
-        if (message instanceof LoginMessage) {
-            LoginMessage m = (LoginMessage) message;
-            // login user
-            if (! login(m)) {
-                System.out.println(user.getUsername() + " already online");
+        if (isOnline()) {
+            chatMessageProcess(message);
+        } else if (message instanceof LoginMessage) {
+            if (! login((LoginMessage) message)) {
+                sendToClient(new TextMessage("already online"));
             } else {
-                System.out.println(user.getUsername() + " becomes online");
+                sendToClient(new TextMessage(user.getUsername() + " becomes online"));
             }
-        } else if (message instanceof ConversationMessage) {
-            // change from to current login user
+        } else {
+            sendToClient(new TextMessage("Invalid Message Format"));
+        }
+    }
+
+    private void chatMessageProcess(ChatMessage message) {
+        if (message instanceof ConversationMessage) {
             handleConversation((ConversationMessage) message);
         } else if (message instanceof ListOnlineUsersMessage) {
             sendOnlineUsers();
-        } else {
-            System.out.println("Unknown message");
         }
+    }
+
+    /**
+     * subscribe to address
+     * @param address eventbus address
+     */
+    private void subscribeTo(String address) {
+        vertx.eventBus().consumer(address).handler(objectMessage -> {
+            sendToClient(JsonObject.mapFrom(objectMessage.body()).mapTo(ChatMessage.class));
+        });
     }
 
     private boolean login(LoginMessage m) {
@@ -79,10 +93,11 @@ public class ConnectionHandler {
         if (map.putIfAbsent(m.getUsername(), user) == null) {
             this.user = user;
 
+            //subscribe to broadcast
+            subscribeTo("broadcast");
+
             // register handler to user/<username> to send the message to network client
-            vertx.eventBus().consumer("user/" + m.getUsername()).handler(this::incomingMessage);
-            // consume broadcast
-            broadcastConsumer.handler(this::incomingMessage);
+            subscribeTo("user/" + m.getUsername());
 
             // broadcast login
             broadcastMessage(new LoginNotification(this.user));
@@ -102,14 +117,6 @@ public class ConnectionHandler {
             return true;
         }
         return false;
-    }
-
-    /**
-     * send message through the network to client
-     * @param message message to send to client
-     */
-    private void incomingMessage(Message<Object> message) {
-        socket.write(JsonObject.mapFrom(message.body()).toBuffer());
     }
 
     /**
@@ -141,6 +148,7 @@ public class ConnectionHandler {
     }
 
     private void broadcastMessage(ChatMessage message) {
+        System.out.println(message.getClass().getName());
         vertx.eventBus().publish("broadcast", JsonObject.mapFrom(message));
     }
 
@@ -149,5 +157,9 @@ public class ConnectionHandler {
             System.out.println(user.getUsername() + " becomes offline");
         }
         System.out.println("client disconnect from " + socket.remoteAddress());
+    }
+
+    private void sendToClient(ChatMessage message) {
+        socket.write(JsonObject.mapFrom(message).toBuffer());
     }
 }

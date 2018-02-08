@@ -17,4 +17,11 @@ public class OnlineUsers extends ChatMessage {
     public Collection<User> getUsers() {
         return users;
     }
+
+    @Override
+    public String toString() {
+        return "OnlineUsers{" +
+                "users=" + users +
+                '}';
+    }
 }

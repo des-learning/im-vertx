@@ -15,4 +15,11 @@ public class LogoutNotification extends ChatMessage {
     public User getUser() {
         return user;
     }
+
+    @Override
+    public String toString() {
+        return "LogoutNotification{" +
+                "user=" + user +
+                '}';
+    }
 }
