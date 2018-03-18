@@ -11,19 +11,19 @@ import com.desdulianto.learning.imvertx.packet.OnlineUsers;
 import com.desdulianto.learning.imvertx.packet.TextMessage;
 import io.vertx.core.Vertx;
 import io.vertx.core.buffer.Buffer;
+import io.vertx.core.http.ServerWebSocket;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.net.NetSocket;
 import io.vertx.core.shareddata.LocalMap;
 
 import java.util.Collection;
 import java.util.Optional;
 
-public class ConnectionHandler {
+public class WSConnectionHandler {
     private final Vertx vertx;
-    private final NetSocket socket;
+    private final ServerWebSocket socket;
     private User user;
 
-    public ConnectionHandler(Vertx vertx, NetSocket socket) {
+    public WSConnectionHandler(Vertx vertx, ServerWebSocket socket) {
         this.vertx = vertx;
         this.socket = socket;
         this.user = null;
@@ -40,9 +40,11 @@ public class ConnectionHandler {
     }
 
     private Optional<ChatMessage> getMessage(Buffer buffer) {
+        JsonObject json = buffer.toJsonObject();
         try {
-            return Optional.of(buffer.toJsonObject().mapTo(ChatMessage.class));
+            return Optional.of(json.mapTo(ChatMessage.class));
         } catch (Exception e){
+            System.out.println(e);
             return Optional.empty();
         }
     }
